@@ -1,0 +1,96 @@
+<html>
+	<body style="margin: 0;">
+		<div id="images"></div>
+	</body>
+	<script>
+		const search = (() => { const r = {}; (window.location.search.startsWith("?") ? window.location.search.substring(1).split("&") : []).forEach(v => { v = v.split("="); if (v[0] && v[1]) r[v[0].toLowerCase()] = v[1]; }); return r; })();
+
+		const filter = search.filter ?? "brightness";
+		const filterValueNotSpeaking = `${filter}(${search.filtervaluenotspeaking ?? "75%"})`;
+		const filterValueSpeaking = `${filter}(${search.filtervaluespeaking ?? "100%"})`;
+		const avatarwidth = search.avatarwidth ?? "128px";
+		const muteiconx = search.muteiconx ?? "0px";
+		const muteicony = search.muteicony ?? "0px";
+		const muteiconwidth = search.muteiconwidth ?? "32px";
+
+		const images = document.querySelector("#images");
+		images.style.display = "flex";
+		images.style.rowGap = search.rowgap ?? "8px";
+		images.style.columnGap = search.columngap ?? "8px";
+		images.style.flexWrap = search.reversey === "1" ? "wrap-reverse" : "wrap";
+		images.style.flexDirection = search.reversex === "1" ? "row-reverse" : "row";
+		images.style.alignContent = "flex-start";
+		images.style.height = "100%";
+
+		function querySelector(query) {
+			try { return document.querySelector(query) }
+			catch(e) { return undefined }
+		}
+
+		function getAvatar(id, url) {
+			return querySelector(`body div#images div#_${id}`) ?? addAvatar(id, url);
+		}
+		function addAvatar(id, url) {
+			const div = document.createElement("div");
+			div.id = `_${id}`;
+			div.style = "display: flex; align-items: flex-end;";
+
+			const img = document.createElement("img");
+			img.src = `${url}?size=128`;
+			img.style = `width: ${avatarwidth}; border-radius: ${search.borderradius ?? "16px"}; filter: ${filterValueNotSpeaking}; transition: filter ${search.transitionduration ?? "0.5s"} ${search.transition ?? "ease"};`;
+
+			div.appendChild(img);
+			images.appendChild(div);
+			return div;
+		}
+		function removeAvatar(id) {
+			const e = querySelector(`body div#images div#_${id}`);
+			if (e) e.parentElement.removeChild(e);
+		}
+
+		const ws = new WebSocket("ws://127.0.0.1:62521");
+		ws.onopen = () => {
+			ws.send("0,browser");
+		};
+		ws.onmessage = e => {
+			const args = e.data.toString().split(",");
+			console.log(args[1], args[2]);
+			if (args[1] === "add") addAvatar(args[2], args[3]);
+			else if (args[1] === "remove") removeAvatar(args[2]);
+			else if (args[1] === "speaking") {
+				const div = getAvatar(args[2], args[3]);
+				const img = div.children[0];
+				if (img.src != args[3]) img.src = args[3];
+				img.style.filter = filterValueSpeaking;
+			}
+			else if (args[1] === "not_speaking") {
+				const div = getAvatar(args[2], args[3]);
+				const img = div.children[0];
+				if (img.src != args[3]) img.src = args[3];
+				img.style.filter = filterValueNotSpeaking;
+			}
+			else if (args[1] === "muted" || args[1] === "muted_by_server") {
+				const div = getAvatar(args[2], args[3]);
+				const muteicon = document.createElement("img");
+				muteicon.src = "mute.png";
+				muteicon.style = `margin-left: calc(-${muteiconwidth} - ${muteiconx}); margin-right: -${muteicony}; width: ${muteiconwidth}; z-index: 1;`;
+				div.appendChild(muteicon);
+			}
+			else if (args[1] === "not_muted" || args[1] === "not_muted_by_server") {
+				const div = getAvatar(args[2], args[3]);
+				const muteicon = document.createElement("img");
+				muteicon.src = "mute.png";
+				muteicon.style = `margin-left: calc(-${muteiconwidth} - ${muteiconx}); margin-right: -${muteicony}; width: ${muteiconwidth}; z-index: 1;`;
+				div.removeChild(muteicon);
+			}
+			else if (args[1] === "deafened" || args[1] === "deafened_by_server") {
+				const div = getAvatar(args[2], args[3]);
+				div.style.display = "none";
+			}
+			else if (args[1] === "not_deafened" || args[1] === "not_deafened_by_server") {
+				const div = getAvatar(args[2], args[3]);
+				div.style.display = "flex";
+			}
+		};
+	</script>
+</html>
