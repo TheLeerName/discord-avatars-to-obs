@@ -3,6 +3,8 @@ let container_index = 0;
 let scroller_index = 4;
 let channels_index = 0;
 
+// to add your avatar remove checks: if (id !== my_id) 
+
 let icon_muted = "m2.7 22.7 20-20a1 1 0 0 0-1.4-1.4l-20 20a1 1 0 1 0 1.4 1.4ZM10.8 17.32c-.21.21-.1.58.2.62V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.06A8 8 0 0 0 20 10a1 1 0 0 0-2 0c0 1.45-.52 2.79-1.38 3.83l-.02.02A5.99 5.99 0 0 1 12.32 16a.52.52 0 0 0-.34.15l-1.18 1.18ZM15.36 4.52c.15-.15.19-.38.08-.56A4 4 0 0 0 8 6v4c0 .3.03.58.1.86.07.34.49.43.74.18l6.52-6.52ZM5.06 13.98c.16.28.53.31.75.09l.75-.75c.16-.16.19-.4.08-.61A5.97 5.97 0 0 1 6 10a1 1 0 0 0-2 0c0 1.45.39 2.81 1.06 3.98Z";
 let icon_muted_by_server = "M12 2c.33 0 .51.35.4.66a6.99 6.99 0 0 0 3.04 8.37c.2.12.31.37.21.6A4 4 0 0 1 8 10V6a4 4 0 0 1 4-4Z";
 let icon_deafened_by_server = "M12.38 1c.38.02.58.45.4.78-.15.3-.3.62-.4.95A.4.4 0 0 1 12 3a9 9 0 0 0-8.95 10h1.87a5 5 0 0 1 4.1 2.13l1.37 1.97a3.1 3.1 0 0 1-.17 3.78 2.85 2.85 0 0 1-3.55.74 11 11 0 0 1 5.71-20.61ZM22.22 11.22c.34-.18.76.02.77.4L23 12a11 11 0 0 1-5.67 9.62c-1.27.71-2.73.23-3.55-.74a3.1 3.1 0 0 1-.17-3.78l1.38-1.97a5 5 0 0 1 4.1-2.13h1.86c.03-.33.05-.66.05-1a.4.4 0 0 1 .27-.38c.33-.1.65-.25.95-.4Z";
@@ -163,7 +165,7 @@ function onSidebarlistMutations(mutations) {
 
 function setupChannelsObserver() {
 	const panels = elements.sidebarlist.parentElement.children[3];
-	my_id = getIDAndURLFromBackgroundImage(panels.children[panels.children.length - 1].children[0].children[0].children[0].children[0].children[0].children[0].src).id;
+	my_id = getIDAndURLFromBackgroundImage(panels.children[panels.children.length - 1].children[0].children[0].children[0].children[1].children[0].children[0].src).id;
 
 	disconnectObserver("channels");
 	observer.channels = new MutationObserver(onChannelsMutations);
@@ -184,14 +186,6 @@ function onChannelsMutations(mutations) {
 				const content = node.children[0].children[0].children[1];
 				const { id, url } = getIDAndURLFromBackgroundImage(content.children[0].style.backgroundImage);
 				if (id === my_id) {
-					if (added) {
-						//console.log(`added ${id}`);
-						if (id !== my_id) sendWS(`1,add,${id},${url}`);
-					}
-					else {
-						//console.log(`removed ${id}`);
-						if (id !== my_id) sendWS(`1,remove,${id},${url}`);
-					}
 					// first user in voice channel was added or last user in voice channel was removed
 					elements.channel = added ? node : undefined;
 					//console.log(elements.channel);
@@ -236,16 +230,18 @@ function onChannelsMutations(mutations) {
 			else if (mutation.target.classList.contains("iconGroup__07f91")) {
 				const content = mutation.target.parentElement.parentElement;
 				const { id, url } = getIDAndURLFromBackgroundImage(content.children[0].style.backgroundImage);
-				const not_prefix = added ? "" : "not_";
-				if (node.classList.contains("iconServer__07f91")) {
-					const d = node.children[1].getAttribute("d");
-					if (d === icon_muted_by_server) sendWS(`1,${not_prefix}muted_by_server,${id},${url}`);
-					if (d === icon_deafened_by_server) sendWS(`1,${not_prefix}deafened_by_server,${id},${url}`);
-				}
-				else {
-					const d = node.children[0].getAttribute("d");
-					if (d === icon_muted) sendWS(`1,${not_prefix}muted,${id},${url}`);
-					if (d === icon_deafened) sendWS(`1,${not_prefix}deafened,${id},${url}`);
+				if (id !== my_id) {
+					const not_prefix = added ? "" : "not_";
+					if (node.classList.contains("iconServer__07f91")) {
+						const d = node.children[1].getAttribute("d");
+						if (d === icon_muted_by_server) sendWS(`1,${not_prefix}muted_by_server,${id},${url}`);
+						if (d === icon_deafened_by_server) sendWS(`1,${not_prefix}deafened_by_server,${id},${url}`);
+					}
+					else {
+						const d = node.children[0].getAttribute("d");
+						if (d === icon_muted) sendWS(`1,${not_prefix}muted,${id},${url}`);
+						if (d === icon_deafened) sendWS(`1,${not_prefix}deafened,${id},${url}`);
+					}
 				}
 			}
 		}

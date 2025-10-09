@@ -1,4 +1,5 @@
 @echo off
+cd assets
 clip <devtools.js
 echo How to run:
 echo 1. Enable developer mode in Discord desktop app
